@@ -131,22 +131,36 @@ adminRouter.put("/course", adminMiddleware, async function (req, res) {
 })
 
 adminRouter.get("/course/bulk", adminMiddleware, async function (req, res) {
-    
-    const adminId = req.userId;
+    try {
+        const adminId = req.userId;
+        const admin = await adminModel.findById(adminId);
+        console.log(admin);
+        
+        if (!admin) {
+            return res.status(404).json({
+                message: "Admin not found"
+            });
+        }
+        const courses = await courseModel.find({
+            creatorId: adminId 
+        });
 
-    const courses = await courseModel.find({
-        creatorId: adminId 
-    });
+        const courseTitles = courses.map(course => course.title);
 
-    const courseTitles = courses.map(course => course.title);
+        res.json({
+            message: `Courses by ${admin.username}`, 
+            adminId: adminId, 
+            courses,               
+            courseTitles            
+        });
 
-    res.json({
-        message: `Courses by ${adminId}`,
-        courses,
-        courseTitles
-    })
-    
-})
+    } catch (error) {
+        res.status(500).json({
+            message: 'Error retrieving courses or admin details',
+            error: error.message
+        });
+    }
+});
 
 module.exports = {
     adminRouter: adminRouter
